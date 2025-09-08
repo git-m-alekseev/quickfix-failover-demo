@@ -1,1 +1,5 @@
 rootProject.name = 'quickfix-failover-demo'
+include 'quickfix-server'
+include 'quickfix-client'
+include 'quickfix-messages-custom'
+

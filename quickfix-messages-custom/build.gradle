@@ -1,0 +1,69 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'dev.max.quickfix.failover'
+version = '1.0.0-SNAPSHOT'
+description = 'Custom QuickFIX/J Messages'
+
+
+java {
+    toolchain { languageVersion.set(JavaLanguageVersion.of(17)) }
+}
+
+ext {
+    qfjVersion = '2.3.2'
+}
+
+configurations {
+    // Отдельная конфигурация для запуска генератора
+    codegen
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // ТРАНЗИТИВНО: эти артефакты получат все модули, которые зависят от :fix-messages
+    api "org.quickfixj:quickfixj-core:${qfjVersion}"
+    api "org.quickfixj:quickfixj-messages-fix44:${qfjVersion}"
+
+    // Класс-путь генератора
+    codegen "org.quickfixj:quickfixj-codegenerator:${qfjVersion}"
+    codegen "org.quickfixj:quickfixj-core:${qfjVersion}"
+}
+
+def generatedDirProvider = layout.buildDirectory.dir('generated-sources/qfj')
+def generatedDir = generatedDirProvider.get().asFile
+
+sourceSets {
+    main {
+        java.srcDir(generatedDirProvider)
+    }
+    // мини-драйвер для генерации
+    codegen {
+        java.srcDir 'src/codegen/java'
+        compileClasspath += configurations.codegen
+        runtimeClasspath += configurations.codegen
+    }
+}
+
+// Задача генерации Java-классов сообщений/полей из словаря FIX
+tasks.register('generateFixMessages', JavaExec) {
+    group = 'quickfix'
+    description = 'Generate QuickFIX/J message & field classes from XML dictionary'
+    mainClass = 'dev.max.fix.CodegenMain'
+    classpath = sourceSets.codegen.runtimeClasspath
+    args 'dev.max.fix44.custom', 'src/main/resources/dict/FIX.4.4-custom.xml', generatedDir
+    inputs.file('src/main/resources/dict/FIX.4.4-custom.xml')
+    outputs.dir(generatedDir)
+}
+
+// Компиляция зависит от генерации + подключаем сгенерённые исходники
+tasks.named('compileJava') {
+    dependsOn tasks.named('generateFixMessages')
+    doFirst {
+        sourceSets.main.java.srcDir generatedDir
+    }
+}
