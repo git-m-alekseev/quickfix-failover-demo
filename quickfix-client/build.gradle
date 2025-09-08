@@ -25,6 +25,7 @@ repositories {
 }
 
 dependencies {
+    project(":quickfix-messages-custom")
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
