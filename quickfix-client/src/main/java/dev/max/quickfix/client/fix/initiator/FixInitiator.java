@@ -17,7 +17,9 @@ import dev.max.quickfix.client.fix.config.FixInitiatorSession;
 import dev.max.quickfix.client.fix.initiator.subscription.SubscriptionHandlerImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import quickfix.FieldNotFound;
 import quickfix.Message;
@@ -59,11 +61,29 @@ public class FixInitiator {
         var future = requestAsync(reqId, type, requestBody);
         var response = awaitResponse(future, reqId);
         try {
+            var status = response.getClientResponseStatus().getValue();
+            if (status.equals(ClientResponseStatuses.ERROR)) {
+                throw new FixInitiatorException(response.getText().getValue());
+            }
             return objectMapper.readValue(response.getText().getValue(), responseBodyType);
         } catch (FieldNotFound e) {
-            throw new FixInitiatorException("Response body is empty: " + responseBodyType, e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Field not found in response: " + e.getMessage(), e);
         } catch (JsonProcessingException e) {
-            throw new FixInitiatorException("Failed to parse response body for request: " + reqId, e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to parse response body for request: " + reqId, e);
+        }
+    }
+
+    public void request(Object requestBody, ClientRequestTypes type) {
+        var reqId = requestIdGenerator.nextId();
+        var future = requestAsync(reqId, type, requestBody);
+        var response = awaitResponse(future, reqId);
+        try {
+            var status = response.getClientResponseStatus().getValue();
+            if (status.equals(ClientResponseStatuses.ERROR)) {
+                throw new FixInitiatorException(response.getText().getValue());
+            }
+        } catch (FieldNotFound e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Field not found in response: " + e.getMessage(), e);
         }
     }
 

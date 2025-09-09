@@ -18,6 +18,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import static dev.max.fix.utils.ClientRequestTypes.EXECUTE;
 import static dev.max.fix.utils.ClientRequestTypes.PING;
+import static dev.max.fix.utils.ClientRequestTypes.UNSUBSCRIBE;
 
 @RestController
 @RequestMapping("/api/")
@@ -39,11 +40,22 @@ public class MessageController {
         return initiator.request(executionRequest, EXECUTE, ExecutionResponse.class);
     }
 
+    @PostMapping("/requests/unsubscribe")
+    public void unsubscribe(@RequestBody SubscriptionRequest request) {
+        if (!request.clientId().equals(initiator.clientId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Client ID mismatch");
+        }
+        initiator.request(request, UNSUBSCRIBE);
+    }
+
     @PostMapping(
             value = "/subscriptions",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribe(SubscriptionRequest request) {
+    public SseEmitter subscribe(@RequestBody SubscriptionRequest request) {
+        if (!request.clientId().equals(initiator.clientId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Client ID mismatch");
+        }
         return initiator.subscribe(request);
     }
 }

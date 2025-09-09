@@ -39,20 +39,20 @@ public class ExecuteRequestHandler implements RequestHandler {
 
         var sub = clientSubscriptionsManager.getSubscription(subscriptionRequest);
         if (sub == null) {
-            response.set(new ClientResponseStatus(ClientResponseStatuses.ERROR));
+            response.set(new ClientResponseStatus(ClientResponseStatuses.OK));
             var executionResponse = new ExecutionResponse(null, "No subscription found");;
             response.set(new Text(toJson(executionResponse)));
             return response;
         }
         var lastQuote = sub.lastQuote();
         if (lastQuote == null) {
-            response.set(new ClientResponseStatus(ClientResponseStatuses.ERROR));
+            response.set(new ClientResponseStatus(ClientResponseStatuses.OK));
             var executionResponse = new ExecutionResponse(null, "No prices");
             response.set(new Text(toJson(executionResponse)));
             return response;
         }
         if (Math.abs(lastQuote.bid() - executionRequest.price()) > 10) {
-            response.set(new ClientResponseStatus(ClientResponseStatuses.ERROR));
+            response.set(new ClientResponseStatus(ClientResponseStatuses.OK));
             var executionResponse = new ExecutionResponse(lastQuote.bid(), "Price has gone");
             response.set(new Text(toJson(executionResponse)));
             return response;
