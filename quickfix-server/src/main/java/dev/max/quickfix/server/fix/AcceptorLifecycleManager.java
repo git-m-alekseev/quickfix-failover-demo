@@ -1,4 +1,4 @@
-package dev.max.quickfix.server.fix.server;
+package dev.max.quickfix.server.fix;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.DisposableBean;

@@ -1,4 +1,4 @@
-package dev.max.quickfix.server.fix.server;
+package dev.max.quickfix.server.fix;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

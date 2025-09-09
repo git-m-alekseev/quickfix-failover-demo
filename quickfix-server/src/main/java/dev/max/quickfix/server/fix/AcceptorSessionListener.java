@@ -1,4 +1,4 @@
-package dev.max.quickfix.server.fix.server;
+package dev.max.quickfix.server.fix;
 
 import dev.max.fix.utils.MessageUtils;
 import dev.max.fix44.custom.fields.MsgType;
