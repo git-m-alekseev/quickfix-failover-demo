@@ -1,0 +1,18 @@
+server:
+  port: 8282
+spring:
+  application:
+    name: fix-server
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/fix_message_store
+    username: quickfix
+    password: quickfix
+
+fix:
+  server:
+    config-file: acceptor.cfg
+    sessions:
+      - client-id: first
+        sender: sender-first-md
+        target: target-first-md

@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:latest
+    restart: always
+    shm_size: 128mb
+    container_name: postgres
+    environment:
+      POSTGRES_USER: quickfix
+      POSTGRES_PASSWORD: quickfix
+      POSTGRES_DB: fix_message_store
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  pgdata:

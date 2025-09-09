@@ -1,4 +1,4 @@
-package dev.max.quickfix.client.api.dto;
+package dev.max.fix.requests;
 
 public record Ping(
         String text

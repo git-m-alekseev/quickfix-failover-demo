@@ -1,7 +1,7 @@
 package dev.max.quickfix.client.api;
 
-import dev.max.quickfix.client.api.dto.Ping;
-import dev.max.quickfix.client.api.dto.Pong;
+import dev.max.fix.requests.Ping;
+import dev.max.fix.requests.Pong;
 import dev.max.quickfix.client.fix.initiator.FixInitiator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
