@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.max.fix.requests.Ping;
 import dev.max.fix.requests.Pong;
 import dev.max.fix.utils.ClientRequestTypes;
+import dev.max.fix.utils.ClientResponseStatuses;
+import dev.max.fix44.custom.fields.ClientRequestType;
+import dev.max.fix44.custom.fields.ClientResponseStatus;
 import dev.max.fix44.custom.fields.ReqID;
 import dev.max.fix44.custom.fields.Text;
 import dev.max.fix44.custom.messages.ClientRequest;
@@ -25,21 +28,21 @@ public class PingHandler implements RequestHandler {
 
     @Override
     public ClientResponse handle(ClientRequest request, SessionID sessionId) throws FieldNotFound, IncorrectTagValue {
-        return onPing(request.getReqID().getValue(), request.getText().getValue(), sessionId);
-    }
-
-    private ClientResponse onPing(String reqId, String pingBody, SessionID sessionID) throws IncorrectTagValue {
-        log.info("[sessionId: {}] Received Ping request [reqId: {}]: {}", sessionID, reqId, pingBody);
+        var reqId = request.getReqID().getValue();
+        var pingBody = request.getText().getValue();
+        log.info("[sessionId: {}] Received Ping request [reqId: {}]: {}", sessionId, reqId, pingBody);
         var ping = parseJson(pingBody);
-        return createPongResponse(reqId, ping);
+        return createPongResponse(reqId, request.getClientRequestType(), ping);
     }
 
-    private ClientResponse createPongResponse(String reqId, Ping ping) throws IncorrectTagValue {
+    private ClientResponse createPongResponse(String reqId, ClientRequestType type, Ping ping) throws IncorrectTagValue {
         var pong = new Pong(ping.text());
         var responseBody = toJson(pong);
         var response = new ClientResponse();
         response.set(new Text(responseBody));
         response.set(new ReqID(reqId));
+        response.set(new ClientResponseStatus(ClientResponseStatuses.OK));
+        response.set(type);
         return response;
     }
 

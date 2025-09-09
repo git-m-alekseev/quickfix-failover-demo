@@ -24,14 +24,14 @@ public class FixInitiatorConfig {
     }
 
     @Bean
-    public ResponseProcessor responseProcessor() {
-        return new ResponseProcessor();
+    public ResponseProcessor responseProcessor(FixInitiatorSession session) {
+        return new ResponseProcessor(session);
     }
 
     @Bean
-    public ThreadedSocketInitiator initiator(FixInitiatorSession session) {
+    public ThreadedSocketInitiator initiator(FixInitiatorSession session, ResponseProcessor responseProcessor) {
         try {
-            var listener = new InitiatorSessionListener(responseProcessor());
+            var listener = new InitiatorSessionListener(responseProcessor);
             var storeFactory = new FileStoreFactory(session.settings());
             var logFactory = new ScreenLogFactory(session.settings());
             var sessionFactory = new DefaultSessionFactory(listener, storeFactory, logFactory, new MessageFactory());

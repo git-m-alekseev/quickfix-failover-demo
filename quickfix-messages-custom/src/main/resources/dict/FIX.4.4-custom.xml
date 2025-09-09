@@ -3664,6 +3664,7 @@
         <message name="ClientResponse" msgtype="U4" msgcat="app">
             <field name="ReqID" required="Y"/>
             <field name="Text" required="N"/>
+            <field name="ClientRequestType" required="Y" />
             <field name="ClientResponseStatus" required="Y"/>
         </message>
         <message name="ClientQuote" msgtype="U5" msgcat="app">

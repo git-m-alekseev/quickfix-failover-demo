@@ -5,3 +5,22 @@ Content-Type: application/json
 {
   "text": "Hello, server!"
 }
+
+### send execution request
+POST http://localhost:8181/api/requests/execution
+Content-Type: application/json
+
+{
+  "clientId": "first",
+  "instrument": "USD/RUB",
+  "price": 75.0
+}
+
+### subscribe
+POST http://localhost:8181/api/subscriptions
+Content-Type: application/json
+
+{
+  "clientId": "first",
+  "instrument": "USD/RUB"
+}

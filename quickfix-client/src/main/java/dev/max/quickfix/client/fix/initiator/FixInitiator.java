@@ -2,7 +2,10 @@ package dev.max.quickfix.client.fix.initiator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.max.fix.requests.Quote;
+import dev.max.fix.requests.SubscriptionRequest;
 import dev.max.fix.utils.ClientRequestTypes;
+import dev.max.fix.utils.ClientResponseStatuses;
 import dev.max.fix44.custom.fields.ClientID;
 import dev.max.fix44.custom.fields.ClientRequestType;
 import dev.max.fix44.custom.fields.ReqID;
@@ -11,12 +14,15 @@ import dev.max.fix44.custom.messages.ClientRequest;
 import dev.max.fix44.custom.messages.ClientResponse;
 import dev.max.quickfix.client.ex.FixInitiatorException;
 import dev.max.quickfix.client.fix.config.FixInitiatorSession;
+import dev.max.quickfix.client.fix.initiator.subscription.SubscriptionHandlerImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import quickfix.FieldNotFound;
 import quickfix.Message;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -29,6 +35,10 @@ public class FixInitiator {
     private final RequestIdGenerator requestIdGenerator = new RequestIdGenerator();
     private final FixInitiatorSession session;
     private final ResponseProcessor responseProcessor;
+
+    public String clientId() {
+        return session.clientId();
+    }
 
     public void send(Message message) {
         try {
@@ -54,6 +64,26 @@ public class FixInitiator {
             throw new FixInitiatorException("Response body is empty: " + responseBodyType, e);
         } catch (JsonProcessingException e) {
             throw new FixInitiatorException("Failed to parse response body for request: " + reqId, e);
+        }
+    }
+
+    public SseEmitter subscribe(SubscriptionRequest subscriptionRequest) {
+        var sseEmitter = new SseEmitter();
+        var subscriptionHandler = createSubscriptionHandler(subscriptionRequest, sseEmitter);
+        responseProcessor.register(subscriptionRequest, subscriptionHandler);
+        var reqId = requestIdGenerator.nextId();
+        var type = ClientRequestTypes.SUBSCRIBE;
+        var future = requestAsync(reqId, type, subscriptionRequest);
+        var response = awaitResponse(future, reqId);
+        try {
+            var status = response.getClientResponseStatus().getValue();
+            if (status.equals(ClientResponseStatuses.ERROR)) {
+                responseProcessor.unregister(subscriptionRequest);
+                sseEmitter.completeWithError(new RuntimeException(response.getText().getValue()));
+            }
+            return sseEmitter;
+        } catch (FieldNotFound e) {
+            throw new FixInitiatorException("Response body is empty", e);
         }
     }
 
@@ -120,5 +150,25 @@ public class FixInitiator {
         public String nextId() {
             return String.valueOf(requestId.incrementAndGet());
         }
+    }
+
+    private SubscriptionHandlerImpl createSubscriptionHandler(SubscriptionRequest subscriptionRequest, SseEmitter emitter) {
+        return SubscriptionHandlerImpl.builder()
+                .quoteConsumer(quote -> {
+                    try {
+                        emitter.send(Quote.fromClientQuote(quote));
+                    } catch (IOException e) {
+                        log.error("Failed to emmit quote: {}", quote, e);
+                    }
+                })
+                .onError(err -> {
+                    log.error("Subscription {} error: {}", subscriptionRequest, err);
+                    emitter.completeWithError(new RuntimeException(err));
+                })
+                .onFinish(() -> {
+                    log.info("Subscription {} finished", subscriptionRequest);
+                    emitter.complete();
+                })
+                .build();
     }
 }

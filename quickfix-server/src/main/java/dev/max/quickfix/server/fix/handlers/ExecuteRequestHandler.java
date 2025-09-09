@@ -1,9 +1,12 @@
 package dev.max.quickfix.server.fix.handlers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.max.fix.requests.ExecutionRequest;
+import dev.max.fix.requests.ExecutionResponse;
 import dev.max.fix.requests.SubscriptionRequest;
 import dev.max.fix.utils.ClientRequestTypes;
+import dev.max.fix.utils.ClientResponseStatuses;
 import dev.max.fix44.custom.fields.ClientResponseStatus;
 import dev.max.fix44.custom.fields.Text;
 import dev.max.fix44.custom.messages.ClientRequest;
@@ -27,6 +30,7 @@ public class ExecuteRequestHandler implements RequestHandler {
     public ClientResponse handle(ClientRequest request, SessionID sessionID) throws FieldNotFound, IncorrectTagValue {
         var response = new ClientResponse();
         response.set(request.getReqID());
+        response.set(request.getClientRequestType());
 
         var executionRequest = parseJson(request.getText().getValue());
         var subscriptionRequest = new SubscriptionRequest(
@@ -35,23 +39,42 @@ public class ExecuteRequestHandler implements RequestHandler {
 
         var sub = clientSubscriptionsManager.getSubscription(subscriptionRequest);
         if (sub == null) {
-            response.set(new ClientResponseStatus("ERROR"));
-            response.set(new Text("No subscription found"));
+            response.set(new ClientResponseStatus(ClientResponseStatuses.ERROR));
+            var executionResponse = new ExecutionResponse(null, "No subscription found");;
+            response.set(new Text(toJson(executionResponse)));
             return response;
         }
         var lastQuote = sub.lastQuote();
-        if (lastQuote == null || Math.abs(lastQuote.bid() - executionRequest.price()) > 10) {
-            response.set(new ClientResponseStatus("ERROR"));
-            response.set(new Text("Price has gone"));
+        if (lastQuote == null) {
+            response.set(new ClientResponseStatus(ClientResponseStatuses.ERROR));
+            var executionResponse = new ExecutionResponse(null, "No prices");
+            response.set(new Text(toJson(executionResponse)));
             return response;
         }
-        response.set(new ClientResponseStatus("OK"));
+        if (Math.abs(lastQuote.bid() - executionRequest.price()) > 10) {
+            response.set(new ClientResponseStatus(ClientResponseStatuses.ERROR));
+            var executionResponse = new ExecutionResponse(lastQuote.bid(), "Price has gone");
+            response.set(new Text(toJson(executionResponse)));
+            return response;
+        }
+        response.set(new ClientResponseStatus(ClientResponseStatuses.OK));
+        var executionResponse = new ExecutionResponse(lastQuote.bid(), null);
+        response.set(new Text(toJson(executionResponse)));
         return response;
     }
 
     @Override
     public ClientRequestTypes type() {
         return EXECUTE;
+    }
+
+
+    private String toJson(ExecutionResponse response) throws IncorrectTagValue {
+        try {
+            return objectMapper.writeValueAsString(response);
+        } catch (JsonProcessingException e) {
+            throw new IncorrectTagValue(Text.FIELD, response.toString(), "Serialize ExecutionResponse failed");
+        }
     }
 
     private ExecutionRequest parseJson(String body) throws IncorrectTagValue {

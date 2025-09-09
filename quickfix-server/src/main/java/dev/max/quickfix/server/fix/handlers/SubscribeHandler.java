@@ -3,6 +3,7 @@ package dev.max.quickfix.server.fix.handlers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.max.fix.requests.SubscriptionRequest;
 import dev.max.fix.utils.ClientRequestTypes;
+import dev.max.fix.utils.ClientResponseStatuses;
 import dev.max.fix44.custom.fields.ClientInstrument;
 import dev.max.fix44.custom.fields.ClientResponseStatus;
 import dev.max.fix44.custom.fields.ReqID;
@@ -39,13 +40,14 @@ public class SubscribeHandler implements RequestHandler {
         var subscribeRequest = parseJson(body);
         var response = new ClientResponse();
         response.set(request.getReqID());
+        response.set(request.getClientRequestType());
         try {
             var subscriber = createSubscriber(reqId, subscribeRequest.instrument(), sessionID);
             subscriptionManager.subscribe(subscribeRequest, subscriber);
-            response.set(new ClientResponseStatus("OK"));
+            response.set(new ClientResponseStatus(ClientResponseStatuses.OK));
         } catch (Exception e) {
             log.error("Error subscribing to instrument {}", subscribeRequest.instrument(), e);
-            response.set(new ClientResponseStatus("ERROR"));
+            response.set(new ClientResponseStatus(ClientResponseStatuses.ERROR));
             response.set(new Text(e.getMessage()));
         }
         return response;
