@@ -5,6 +5,7 @@ import dev.max.quickfix.server.integration.MarketDataListener;
 import dev.max.quickfix.server.integration.MarketDataSource;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -19,8 +20,10 @@ import java.util.concurrent.ThreadFactory;
 
 import static dev.max.quickfix.server.integration.MarketDataSource.SubscribeResult.ALREADY_EXISTS;
 import static dev.max.quickfix.server.integration.MarketDataSource.SubscribeResult.OK;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StubMarketDataSource implements MarketDataSource {
@@ -35,9 +38,7 @@ public class StubMarketDataSource implements MarketDataSource {
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, getThreadFactory());
 
-    private final ExecutorService quotesProviderExecutor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual()
-            .name("QuoteProvider")
-            .factory());
+    private final ExecutorService quotesProviderExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     private final ConcurrentMap<String, Subscription> listeners = new ConcurrentHashMap<>();
 
@@ -50,7 +51,8 @@ public class StubMarketDataSource implements MarketDataSource {
 
         var created = new BooleanWrapper();
         listeners.computeIfAbsent(instrument, key -> {
-            var scheduledFuture = scheduler.scheduleAtFixedRate(() -> supplyQuotes(instrument), 0, 1, SECONDS);
+            log.info("Creating new subscription for {}", key);
+            var scheduledFuture = scheduler.scheduleAtFixedRate(() -> supplyQuotes(instrument), 1000L, 2000L, MILLISECONDS);
             created.value = true;
             return new Subscription(scheduledFuture, listener);
         });
@@ -62,6 +64,7 @@ public class StubMarketDataSource implements MarketDataSource {
 
     @Override
     public void unsubscribe(String instrument) {
+        log.info("Unsubscribing from {}", instrument);
         var subscription = listeners.remove(instrument);
         if (subscription != null) {
             subscription.scheduledFuture.cancel(true);
@@ -79,10 +82,15 @@ public class StubMarketDataSource implements MarketDataSource {
     }
 
     private void supplyQuotes(String instrument) {
+        log.info("Supplying quotes from {}", instrument);
         listeners.forEach((istr, subscription) -> {
+            log.info("Checking the quote instrument {} - {}", istr, instrument);
             if (instrument.equals(istr)) {
                 var quote = StubQuoteGenerator.generate(instrument);
-                quotesProviderExecutor.submit(() -> subscription.listener.onQuote(quote));
+                quotesProviderExecutor.execute(() -> {
+                    log.info("Supplying quote {}", quote);
+                    subscription.listener.onQuote(quote);
+                });
             }
         });
     }

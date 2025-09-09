@@ -6,12 +6,14 @@ import dev.max.quickfix.server.subscription.QuoteStreamSubscriber;
 import dev.max.quickfix.server.subscription.QuoteSubscription;
 import dev.max.quickfix.server.subscription.StreamingQuoteSource;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ClientSubscriptionsManager {
@@ -20,14 +22,17 @@ public class ClientSubscriptionsManager {
     private final StreamingQuoteSource quoteSource;
 
     public void subscribe(SubscriptionRequest request, QuoteStreamSubscriber subscriber) {
+        log.info("Trying to subscribe to {}", request);
         var created = new AtomicBoolean(false);
         subscriptions.computeIfAbsent(request, key -> {
+            log.info("Subscription doesn't exist - subscribe {}", request);
             created.set(true);
             var quoteSubscription = quoteSource.createSubscription(request.instrument());
             quoteSubscription.subscribe(new QuoteStreamSubscriberImpl(request, subscriber));
             return quoteSubscription;
         });
         if (!created.get()) {
+            log.error("Subscription already exists {}", request);
             throw new RuntimeException("Already exists");
         }
     }

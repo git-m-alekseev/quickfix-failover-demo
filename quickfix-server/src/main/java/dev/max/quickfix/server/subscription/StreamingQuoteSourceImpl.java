@@ -4,6 +4,7 @@ import dev.max.fix.requests.Quote;
 import dev.max.quickfix.server.integration.MarketDataListener;
 import dev.max.quickfix.server.integration.MarketDataSource;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.BlockingDeque;
@@ -17,6 +18,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StreamingQuoteSourceImpl implements StreamingQuoteSource {
@@ -28,7 +30,8 @@ public class StreamingQuoteSourceImpl implements StreamingQuoteSource {
     public QuoteSubscription createSubscription(String instrument) {
         return subscriptions.compute(instrument, (rq, sub) -> {
             if (sub == null) {
-                var subscription = new QuoteSubscriptionImpl();
+                log.info("Creating subscription for {}", instrument);
+                var subscription = new QuoteSubscriptionImpl(instrument);
                 var listener = new MarketDataListenerImpl(subscription);
                 marketDataSource.subscribe(instrument, listener);
                 return subscription;
@@ -60,8 +63,9 @@ public class StreamingQuoteSourceImpl implements StreamingQuoteSource {
     }
 
     @RequiredArgsConstructor
-    static class QuoteSubscriptionImpl implements QuoteSubscriptionSink, QuoteSubscription {
+    class QuoteSubscriptionImpl implements QuoteSubscriptionSink, QuoteSubscription {
 
+        private final String instrument;
         private final AtomicReference<Quote> lastQuote = new AtomicReference<>();
         private final BlockingDeque<Quote> quotes = new LinkedBlockingDeque<>(256);
         private final AtomicReference<SubscriptionContext> ctxRef = new AtomicReference<>();
@@ -77,6 +81,7 @@ public class StreamingQuoteSourceImpl implements StreamingQuoteSource {
 
         @Override
         public void emmitError(Throwable error) {
+            log.error("Emitting error for subscription {}", instrument, error);
             var ctx = ctxRef.getAndSet(null);
             ctx.publishTask.cancel(true);
             ctx.subscriber.onError(error);
@@ -84,6 +89,7 @@ public class StreamingQuoteSourceImpl implements StreamingQuoteSource {
 
         @Override
         public void emmitComplete() {
+            log.info("Emitting complete subscription for {}", instrument);
             var ctx = ctxRef.getAndSet(null);
             ctx.publishTask.cancel(true);
             ctx.subscriber.onComplete();
@@ -97,28 +103,27 @@ public class StreamingQuoteSourceImpl implements StreamingQuoteSource {
 
         @Override
         public void cancel() {
+            log.info("Cancelling subscription {}", instrument);
             var ctx = ctxRef.getAndSet(null);
             ctx.publishTask.cancel(true);
             ctx.subscriber.onComplete();
+            marketDataSource.unsubscribe(instrument);
         }
 
         @Override
         public void subscribe(QuoteStreamSubscriber streamSubscriber) {
-            var task = scheduler.scheduleAtFixedRate(() -> consumeQuote(streamSubscriber), 1000L, 2000L, TimeUnit.SECONDS);
+            var task = scheduler.scheduleAtFixedRate(() -> consumeQuote(streamSubscriber), 1000L, 2000L, TimeUnit.MILLISECONDS);
             var ctx = new SubscriptionContext(streamSubscriber, task);
             ctxRef.set(ctx);
         }
 
         private void consumeQuote(QuoteStreamSubscriber subscriber) {
-            while (true) {
-                try {
-                    var quote = quotes.take();
-                    lastQuote.set(quote);
-                    emitter.execute(() -> subscriber.onQuote(quote));
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
+            try {
+                var quote = quotes.take();
+                lastQuote.set(quote);
+                emitter.execute(() -> subscriber.onQuote(quote));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
     }
@@ -126,7 +131,8 @@ public class StreamingQuoteSourceImpl implements StreamingQuoteSource {
     private record SubscriptionContext(
             QuoteStreamSubscriber subscriber,
             ScheduledFuture<?> publishTask
-    ) { }
+    ) {
+    }
 
     interface QuoteSubscriptionSink {
 
