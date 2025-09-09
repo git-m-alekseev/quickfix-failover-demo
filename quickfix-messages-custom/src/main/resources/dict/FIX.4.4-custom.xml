@@ -3659,10 +3659,23 @@
             <field name="ReqID" required="Y"/>
             <field name="Text" required="N"/>
             <field name="ClientRequestType" required="Y"/>
+            <field name="ClientID" required="Y"/>
         </message>
         <message name="ClientResponse" msgtype="U4" msgcat="app">
             <field name="ReqID" required="Y"/>
             <field name="Text" required="N"/>
+            <field name="ClientResponseStatus" required="Y"/>
+        </message>
+        <message name="ClientQuote" msgtype="U5" msgcat="app">
+            <field name="ReqID" required="Y"/>
+            <field name="ClientInstrument" required="Y"/>
+            <field name="BidPx" required="Y"/>
+            <field name="OfferPx" required="Y"/>
+        </message>
+        <message name="SubscriptionFinished" msgtype="U6" msgcat="app">
+            <field name="ReqID" required="Y"/>
+            <field name="ClientInstrument" required="Y"/>
+            <field name="SubscriptionFinishedReason" required="Y" />
         </message>
     </messages>
     <components>
@@ -4224,6 +4237,7 @@
 <!--            custom messages -->
             <value enum="U3" description="CLIENT_REQUEST" />
             <value enum="U4" description="CLIENT_RESPONSE" />
+            <value enum="U5" description="CLIENT_QUOTE" />
         </field>
         <field number="36" name="NewSeqNo" type="SEQNUM"/>
         <field number="37" name="OrderID" type="STRING"/>
@@ -6828,5 +6842,9 @@
         <!--        custom fields-->
         <field number="11002" name="ReqID" type="STRING"/>
         <field number="11003" name="ClientRequestType" type="STRING" />
+        <field number="11004" name="ClientID" type="STRING"/>
+        <field number="11005" name="ClientResponseStatus" type="STRING"/>
+        <field number="11006" name="ClientInstrument" type="STRING"/>
+        <field number="11007" name="SubscriptionFinishedReason" type="STRING"/>
     </fields>
 </fix>

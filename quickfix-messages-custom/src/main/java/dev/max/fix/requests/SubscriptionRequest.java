@@ -1,6 +1,6 @@
 package dev.max.fix.requests;
 
-public record SubscribeRequest(
+public record SubscriptionRequest(
         String clientId,
         String instrument
 ) { }

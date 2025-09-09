@@ -35,9 +35,12 @@ public class MessageProcessor extends MessageCracker {
     public void onMessage(ClientRequest clientRequest, SessionID sessionID) throws FieldNotFound, UnsupportedMessageType, IncorrectTagValue {
         var type = clientRequest.getClientRequestType().getValue();
         var rqType = ClientRequestTypes.fromString(type);
-        switch (rqType) {
-            case PING -> getHandler(ClientRequestTypes.PING).handle(clientRequest, sessionID);
-            default -> throw new UnsupportedMessageType();
+        var reqId = clientRequest.getReqID().getValue();
+        var response = getHandler(rqType).handle(clientRequest, sessionID);
+        try {
+            quickfix.Session.sendToTarget(response, sessionID);
+        } catch (quickfix.SessionNotFound e) {
+            log.error("[sessionId: {}] Couldn't send response to request [reqId: {}]", sessionID, reqId, e);
         }
     }
 

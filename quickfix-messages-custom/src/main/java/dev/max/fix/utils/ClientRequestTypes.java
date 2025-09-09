@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum ClientRequestTypes {
-    PING, SUBSCRIBE, EXECUTE;
+    PING, SUBSCRIBE, UNSUBSCRIBE, EXECUTE;
 
     private static final Map<String, ClientRequestTypes> map = new HashMap<>();
 

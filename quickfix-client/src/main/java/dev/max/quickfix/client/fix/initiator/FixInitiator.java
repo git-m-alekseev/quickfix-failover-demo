@@ -3,6 +3,7 @@ package dev.max.quickfix.client.fix.initiator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.max.fix.utils.ClientRequestTypes;
+import dev.max.fix44.custom.fields.ClientID;
 import dev.max.fix44.custom.fields.ClientRequestType;
 import dev.max.fix44.custom.fields.ReqID;
 import dev.max.fix44.custom.fields.Text;
@@ -106,6 +107,7 @@ public class FixInitiator {
             clientRequest.set(new ReqID(reqId));
             clientRequest.set(new Text(json));
             clientRequest.set(new ClientRequestType(type.name()));
+            clientRequest.set(new ClientID(session.clientId()));
             return clientRequest;
         } catch (JsonProcessingException e) {
             throw new FixInitiatorException(e);

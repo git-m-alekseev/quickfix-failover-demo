@@ -9,6 +9,7 @@ import dev.max.fix44.custom.fields.ReqID;
 import dev.max.fix44.custom.fields.Text;
 import dev.max.fix44.custom.messages.ClientRequest;
 import dev.max.fix44.custom.messages.ClientResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import quickfix.FieldNotFound;
@@ -17,24 +18,20 @@ import quickfix.SessionID;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class PingHandler implements RequestHandler {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     @Override
-    public void handle(ClientRequest request, SessionID sessionId) throws FieldNotFound, IncorrectTagValue {
-        onPing(request.getReqID().getValue(), request.getText().getValue(), sessionId);
+    public ClientResponse handle(ClientRequest request, SessionID sessionId) throws FieldNotFound, IncorrectTagValue {
+        return onPing(request.getReqID().getValue(), request.getText().getValue(), sessionId);
     }
 
-    private void onPing(String reqId, String pingBody, SessionID sessionID) throws IncorrectTagValue {
+    private ClientResponse onPing(String reqId, String pingBody, SessionID sessionID) throws IncorrectTagValue {
         log.info("[sessionId: {}] Received Ping request [reqId: {}]: {}", sessionID, reqId, pingBody);
         var ping = parseJson(pingBody);
-        var pong = createPongResponse(reqId, ping);
-        try {
-            quickfix.Session.sendToTarget(pong, sessionID);
-        } catch (quickfix.SessionNotFound e) {
-            log.error("[sessionId: {}] Couldn't send response to request [reqId: {}]", sessionID, reqId, e);
-        }
+        return createPongResponse(reqId, ping);
     }
 
     private ClientResponse createPongResponse(String reqId, Ping ping) throws IncorrectTagValue {
