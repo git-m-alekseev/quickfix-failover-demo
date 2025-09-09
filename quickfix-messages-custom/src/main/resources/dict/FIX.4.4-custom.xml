@@ -3658,6 +3658,7 @@
         <message name="ClientRequest" msgtype="U3" msgcat="app">
             <field name="ReqID" required="Y"/>
             <field name="Text" required="N"/>
+            <field name="ClientRequestType" required="Y"/>
         </message>
         <message name="ClientResponse" msgtype="U4" msgcat="app">
             <field name="ReqID" required="Y"/>
@@ -6826,5 +6827,6 @@
 
         <!--        custom fields-->
         <field number="11002" name="ReqID" type="STRING"/>
+        <field number="11003" name="ClientRequestType" type="STRING" />
     </fields>
 </fix>

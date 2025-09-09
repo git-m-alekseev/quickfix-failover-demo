@@ -1,0 +1,12 @@
+server:
+  port: 8181
+fix:
+  client:
+    config-file: initiator.cfg
+    session:
+      client-id: first
+      sender: sender-first-md
+      target: target-first-md
+      acceptor-addresses:
+        - localhost:9878
+        - localhost:9888

@@ -6,7 +6,7 @@ public class FixInitiatorException extends RuntimeException{
         super(cause);
     }
 
-    public FixInitiatorException(String message, Exception cause) {
+    public FixInitiatorException(String message, Throwable cause) {
         super(message, cause);
     }
 

@@ -7,5 +7,4 @@ public record FixInitiatorSession(
         String clientId,
         SessionID sessionId,
         SessionSettings settings
-) {
-}
+) { }
