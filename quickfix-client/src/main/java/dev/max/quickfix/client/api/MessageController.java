@@ -5,6 +5,7 @@ import dev.max.fix.requests.Pong;
 import dev.max.quickfix.client.fix.initiator.FixInitiator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,8 +18,8 @@ public class MessageController {
 
     private final FixInitiator initiator;
 
-    @PostMapping
-    public Pong ping(Ping ping) {
+    @PostMapping("/requests/ping")
+    public Pong ping(@RequestBody Ping ping) {
         return initiator.request(ping, PING, Pong.class);
     }
 }

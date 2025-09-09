@@ -1,0 +1,7 @@
+### send ping
+POST http://localhost:8181/api/requests/ping
+Content-Type: application/json
+
+{
+  "text": "Hello, server!"
+}
