@@ -107,8 +107,8 @@ public class StubMarketDataSource implements MarketDataSource {
     private static class StubQuoteGenerator {
         public static Quote generate(String instrument) {
             var price = prices.get(instrument);
-            var bid = RANDOM.nextDouble(price, price + 10.0);
-            var ask = RANDOM.nextDouble(price, price - 10.0);
+            var bid = RANDOM.nextDouble(price - 10.0, price);
+            var ask = RANDOM.nextDouble(price, price + 10.0);
             return new Quote(
                     instrument,
                     bid,
