@@ -104,9 +104,6 @@ public class StreamingQuoteSourceImpl implements StreamingQuoteSource {
         @Override
         public void cancel() {
             log.info("Cancelling subscription {}", instrument);
-            var ctx = ctxRef.getAndSet(null);
-            ctx.publishTask.cancel(true);
-            ctx.subscriber.onComplete();
             marketDataSource.unsubscribe(instrument);
         }
 

@@ -24,3 +24,12 @@ Content-Type: application/json
   "clientId": "first",
   "instrument": "USD/RUB"
 }
+
+### unsubscribe
+POST http://localhost:8181/api/requests/unsubscribe
+Content-Type: application/json
+
+{
+  "clientId": "first",
+  "instrument": "USD/RUB"
+}
